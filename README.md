@@ -1,6 +1,6 @@
 # Spendwise
 
-A personal-finance agent that **takes real actions on a database** instead of just talking about them — built with Claude tool use, a FastAPI backend streaming over SSE, a Flutter client that surfaces the agent's reasoning, and an offline eval suite that scores every change.
+A personal-finance agent that **takes real actions on a database** instead of just talking about them — built with Claude tool use (or any model via OpenRouter), a FastAPI backend streaming over SSE, a Flutter client that surfaces the agent's reasoning, and an offline eval suite that scores every change.
 
 The agent handles requests like *"posso permettermi una cena da 80€ questo weekend?"* by planning a multi-step lookup across budgets, month-to-date spending, and the user's savings goal — then answers with the actual numbers and a recommendation shaped by that user's stored preferences.
 
@@ -54,6 +54,8 @@ Flutter client  ──POST /chat/stream──▶  FastAPI
 
 **Manual agentic loop over the SDK's tool runner.** The loop is written out explicitly so each stage can be mapped to a custom SSE event. A batteries-included runner would drive the conversation but hide the seams where "I'm checking the restaurant budget…" and the tool result need to be pushed to the client mid-turn.
 
+**One canonical message format, pluggable providers.** The orchestrator speaks only Anthropic-shaped content blocks (`text` / `thinking` / `tool_use` / `tool_result`); a provider's sole job is to stream one model call and hand back blocks in that shape. `AnthropicProvider` passes them through; `OpenRouterProvider` translates to and from the OpenAI chat-completions format (tool calls, `role: tool` results, `reasoning` echo-back) and takes the billed cost straight from OpenRouter's `usage.cost`. Switching vendor is two lines of `.env`, and the stored history, the replay endpoint and the UI never change.
+
 **SSE, not WebSockets.** The flow is one-directional (client asks, server streams back). SSE is simpler to implement, trivial to test with `curl`, and needs no connection lifecycle management.
 
 **Conversation history stored as raw content blocks.** `conversation_messages.content_json` holds the exact Anthropic block list, including `tool_use` and `tool_result`. One representation serves both replaying context to the API and rendering the reasoning trail in the UI — no parallel schema to keep in sync.
@@ -94,6 +96,7 @@ cd backend
 python -m evaluation.run_eval                      # full suite
 python -m evaluation.run_eval --case reasoning     # one case
 python -m evaluation.run_eval --model claude-sonnet-5   # compare cost/quality
+python -m evaluation.run_eval --provider openrouter --model openai/gpt-5.4-mini
 ```
 
 Latest run (`claude-opus-5`):
@@ -128,6 +131,17 @@ uvicorn app.main:app --reload
 ```
 
 API at `http://127.0.0.1:8000` (interactive docs at `/docs`).
+
+**Using OpenRouter models instead of Claude directly.** In `.env`:
+
+```bash
+LLM_PROVIDER=openrouter
+LLM_MODEL=openai/gpt-5.4-mini        # any vendor/model id from openrouter.ai/models
+OPENROUTER_API_KEY=sk-or-...
+# OPENROUTER_REASONING_EFFORT=medium # optional: surfaces reasoning as trace steps on models that support it
+```
+
+Cost shown in the UI and eval reports is then the amount OpenRouter actually billed, not an estimate. To keep Claude's native features (adaptive thinking, prompt caching) but pay through OpenRouter, leave `LLM_PROVIDER=anthropic` and set `ANTHROPIC_BASE_URL=https://openrouter.ai/api` with your OpenRouter key in `ANTHROPIC_API_KEY`.
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/chat/stream \
@@ -179,11 +193,12 @@ The client points at `http://127.0.0.1:8000` by default (`lib/services/agent_api
 backend/
   app/
     agent/          orchestrator (tool-use loop + SSE), tools, prompts, memory, pricing
+      providers/    LLM provider contract + Anthropic and OpenRouter implementations
     api/            chat (SSE), budgets, transactions, goals
     services/       budget and savings-goal business logic
     models.py       SQLAlchemy schema
   evaluation/       eval cases, fixtures, metrics, runner, JSON reports
-  tests/            24 pytest tests (tools, API, eval harness)
+  tests/            34 pytest tests (tools, API, eval harness, providers, agent loop)
   seed_data.py      deterministic demo/fixture data
 frontend/
   lib/
@@ -200,11 +215,11 @@ frontend/
 ## Testing
 
 ```bash
-cd backend && pytest        # 24 tests, no API calls, fully deterministic
+cd backend && pytest        # 34 tests, no API calls, fully deterministic
 cd frontend && flutter test
 ```
 
-The pytest suite covers tool logic, endpoints, and the eval harness without touching the network; the eval suite is the separate, paid layer that exercises the model itself.
+The pytest suite covers tool logic, endpoints, the eval harness, the OpenRouter message translation, and the full agent loop driven by a scripted provider, without touching the network; the eval suite is the separate, paid layer that exercises the model itself.
 
 ---
 

@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI: debug backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "jinja": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Pytest: debug current test file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "justMyCode": false
+    },
+    {
+      "name": "Eval: debug a single case",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "evaluation.run_eval",
+      "args": ["--case", "reasoning_afford_dinner"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "justMyCode": false
+    }
+  ]
+}

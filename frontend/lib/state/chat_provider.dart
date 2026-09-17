@@ -44,7 +44,14 @@ class ChatProvider extends ChangeNotifier {
       case 'status':
         turn.steps.add(ReasoningStep.status(data['message'] as String));
       case 'thinking':
-        turn.steps.add(ReasoningStep.thinking(data['delta'] as String));
+        // Deltas arrive token by token; merge them into one trace row.
+        final delta = data['delta'] as String;
+        final last = turn.steps.isEmpty ? null : turn.steps.last;
+        if (last != null && last.type == ReasoningStepType.thinking) {
+          turn.steps[turn.steps.length - 1] = ReasoningStep.thinking((last.message ?? '') + delta);
+        } else {
+          turn.steps.add(ReasoningStep.thinking(delta));
+        }
       case 'tool_call':
         turn.steps.add(
           ReasoningStep.toolCall(data['name'] as String, (data['input'] as Map?)?.cast<String, dynamic>() ?? {}),

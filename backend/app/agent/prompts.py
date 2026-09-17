@@ -13,10 +13,6 @@ Regole:
 """
 
 
-def build_system_blocks() -> list[dict]:
-    return [{"type": "text", "text": STATIC_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}]
-
-
 def build_context_prefix(preferences: dict) -> str:
     today = date.today().isoformat()
     prefs_text = json.dumps(preferences, ensure_ascii=False) if preferences else "nessuna preferenza salvata"

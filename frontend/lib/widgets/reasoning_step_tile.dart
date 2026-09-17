@@ -3,50 +3,56 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../models/reasoning_step.dart';
+import '../theme/spendwise_theme.dart';
 
-/// One row inside the reasoning trail - visually distinct (icon + muted
-/// monospace-ish text) from the final chat bubble, so it reads as "process",
-/// not "answer".
+/// One row of the reasoning trace: `index  TAG  payload`, all monospace, so
+/// the trail reads as a process log rather than as part of the answer. Only
+/// tool calls get the accent; errors get the error colour.
 class ReasoningStepTile extends StatelessWidget {
+  final int index;
   final ReasoningStep step;
 
-  const ReasoningStepTile({super.key, required this.step});
+  const ReasoningStepTile({super.key, required this.index, required this.step});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontFamily: 'monospace',
-    );
-
-    final (icon, label) = switch (step.type) {
-      ReasoningStepType.status => (Icons.hourglass_top, step.message ?? ''),
-      ReasoningStepType.thinking => (Icons.psychology_outlined, step.message ?? ''),
+    final (tag, tagColor, label, maxLines) = switch (step.type) {
+      ReasoningStepType.status => ('STATUS', SwColors.textDim, step.message ?? '', 2),
+      ReasoningStepType.thinking => ('THINK', SwColors.textMuted, step.message ?? '', 8),
       ReasoningStepType.toolCall => (
-          Icons.build_outlined,
+          'CALL',
+          SwColors.accent,
           '${step.toolName}(${_formatCompact(step.toolInput)})',
+          3,
         ),
       ReasoningStepType.toolResult => (
-          step.isError ? Icons.error_outline : Icons.check_circle_outline,
+          step.isError ? 'ERROR' : 'RESULT',
+          step.isError ? SwColors.error : SwColors.textMuted,
           '${step.toolName} → ${_formatCompact(step.toolOutput)}',
+          3,
         ),
     };
 
-    final color = step.isError ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant;
+    final bodyColor = step.isError ? SwColors.error : SwColors.textMuted;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: SwSpace.md, vertical: SwSpace.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          SizedBox(
+            width: 24,
+            child: Text(index.toString().padLeft(2, '0'), style: SwText.mono.copyWith(color: SwColors.textDim)),
+          ),
+          SizedBox(
+            width: 64,
+            child: Text(tag, style: SwText.mono.copyWith(color: tagColor, fontWeight: FontWeight.w500)),
+          ),
           Expanded(
             child: Text(
               label,
-              style: mutedStyle?.copyWith(color: step.isError ? theme.colorScheme.error : null),
-              maxLines: 3,
+              style: SwText.mono.copyWith(color: bodyColor),
+              maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
             ),
           ),

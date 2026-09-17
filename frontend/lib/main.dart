@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'screens/chat_screen.dart';
 import 'state/chat_provider.dart';
+import 'theme/spendwise_theme.dart';
 
 void main() {
   runApp(const SpendwiseApp());
@@ -17,10 +18,11 @@ class SpendwiseApp extends StatelessWidget {
       create: (_) => ChatProvider(),
       child: MaterialApp(
         title: 'Spendwise',
-        theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal, brightness: Brightness.dark),
-        ),
+        debugShowCheckedModeBanner: false,
+        // Dark only: the look is built around a flat black base.
+        theme: buildSpendwiseTheme(),
+        darkTheme: buildSpendwiseTheme(),
+        themeMode: ThemeMode.dark,
         home: const ChatScreen(),
       ),
     );
