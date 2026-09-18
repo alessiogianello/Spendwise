@@ -108,7 +108,7 @@ def test_accumulator_text_only_turn_ends_normally():
     result = acc.result("x/y")
     assert result.stop_reason == "end_turn"
     assert result.content == [{"type": "text", "text": "Ciao!"}]
-    assert result.usage.cost_usd is None  # no usage chunk -> orchestrator falls back to estimate
+    assert result.usage.cost_usd is None  # no usage chunk -> orchestrator reports 0.0
 
 
 def test_accumulator_rejects_malformed_tool_arguments():

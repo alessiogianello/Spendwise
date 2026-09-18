@@ -27,8 +27,7 @@ class TurnUsage:
     output_tokens: int = 0
     cache_creation_tokens: int = 0
     cache_read_tokens: int = 0
-    # Billed cost when the provider reports it (OpenRouter does); None means
-    # "estimate it from the pricing table".
+    # Billed cost as reported by the provider; None when no usage was returned.
     cost_usd: float | None = None
 
 

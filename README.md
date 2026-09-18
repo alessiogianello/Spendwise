@@ -191,7 +191,7 @@ The client points at `http://127.0.0.1:8000` by default (`lib/services/agent_api
 ```
 backend/
   app/
-    agent/          orchestrator (tool-use loop + SSE), tools, prompts, memory, pricing
+    agent/          orchestrator (tool-use loop + SSE), tools, prompts, memory
       providers/    LLM provider contract + OpenRouter implementation
     api/            chat (SSE), budgets, transactions, goals
     services/       budget and savings-goal business logic

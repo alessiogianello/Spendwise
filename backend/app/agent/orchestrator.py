@@ -5,7 +5,6 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.orm import Session
 
 from app.agent.memory import get_preferences
-from app.agent.pricing import estimate_cost_usd
 from app.agent.prompts import STATIC_SYSTEM_PROMPT, build_context_prefix
 from app.agent.providers import ProviderError, StreamDelta, TurnResult, create_provider
 from app.agent.tool_impls import execute_tool
@@ -78,7 +77,7 @@ async def stream_agent_turn(
     total_output_tokens = 0
     total_cache_creation = 0
     total_cache_read = 0
-    billed_cost_usd: float | None = None  # only when the provider reports real charges
+    billed_cost_usd: float | None = None  # None until the provider reports a charge
     final_text_parts: list[str] = []
 
     try:
@@ -141,17 +140,9 @@ async def stream_agent_turn(
             }
 
         latency_ms = round((time.monotonic() - start) * 1000)
-        cost_usd = (
-            round(billed_cost_usd, 6)
-            if billed_cost_usd is not None
-            else estimate_cost_usd(
-                provider.model,
-                total_input_tokens,
-                total_output_tokens,
-                total_cache_creation,
-                total_cache_read,
-            )
-        )
+        # OpenRouter reports the billed amount on the final chunk; 0.0 means
+        # no usage chunk arrived, not a free call.
+        cost_usd = round(billed_cost_usd, 6) if billed_cost_usd is not None else 0.0
         yield {
             "event": "done",
             "data": {

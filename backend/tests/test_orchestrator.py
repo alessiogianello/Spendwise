@@ -116,7 +116,7 @@ async def test_tool_error_is_reported_and_fed_back(db_session, monkeypatch):
     fed_back = provider.seen_messages[1][-1]["content"][0]
     assert fed_back["is_error"] is True
     assert events[-1]["event"] == "done"
-    assert events[-1]["data"]["cost_usd"] == 0.0  # unknown model, nothing billed -> estimate is 0
+    assert events[-1]["data"]["cost_usd"] == 0.0  # provider reported no charge
 
 
 @pytest.mark.asyncio
