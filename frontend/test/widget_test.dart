@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:spendwise_app/main.dart';
 import 'package:spendwise_app/screens/chat_screen.dart';
+import 'package:spendwise_app/screens/splash_screen.dart';
 import 'package:spendwise_app/services/agent_api_client.dart';
 import 'package:spendwise_app/state/chat_provider.dart';
 import 'package:spendwise_app/theme/spendwise_theme.dart';
@@ -23,8 +24,26 @@ class _FakeClient extends AgentApiClient {
 }
 
 void main() {
+  testWidgets('splash breathes, then hands over to the chat', (WidgetTester tester) async {
+    await tester.pumpWidget(const SpendwiseApp());
+
+    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(ChatScreen), findsNothing);
+    // The mark is still animating, not settled: the splash must survive frames.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(SplashScreen), findsOneWidget);
+
+    // Past the splash duration plus the cross-fade.
+    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(SplashScreen), findsNothing);
+    expect(find.byType(ChatScreen), findsOneWidget);
+  });
+
   testWidgets('shows the empty state and lets the user type a message', (WidgetTester tester) async {
     await tester.pumpWidget(const SpendwiseApp());
+    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('SPENDWISE'), findsOneWidget);
     expect(find.textContaining('cena da 80€'), findsOneWidget);

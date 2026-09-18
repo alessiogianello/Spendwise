@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens for the "control room" look: a deep, flat black base, thin
-/// 1px lines instead of shadows, off-white text, and a single cold accent
-/// reserved for calls to action and highlighted data.
+/// Design tokens for the "control room" look: a flat white base, thin 1px
+/// lines instead of shadows, near-black text, and solid black as the only
+/// accent - reserved for calls to action and highlighted data.
 abstract final class SwColors {
-  static const bg = Color(0xFF0A0A0A);
-  static const surface = Color(0xFF111111); // inputs, panels
-  static const surfaceRaised = Color(0xFF171717); // hovered rows
-  static const grid = Color(0xFF131313); // decorative background grid
-  static const line = Color(0xFF242424); // separators
-  static const lineStrong = Color(0xFF3A3A3A); // borders on interactive elements
-  static const text = Color(0xFFF2F2EF);
-  static const textMuted = Color(0xFF8F8F8A);
-  static const textDim = Color(0xFF5C5C58);
-  static const accent = Color(0xFF4D8DFF); // electric blue - use sparingly
-  static const onAccent = Color(0xFF0A0A0A);
-  static const error = Color(0xFFE5484D);
+  static const bg = Color(0xFFFFFFFF);
+  static const surface = Color(0xFFF7F7F5); // inputs, panels
+  static const surfaceRaised = Color(0xFFEFEFEC); // hovered rows
+  static const grid = Color(0xFFF1F1EF); // decorative background grid
+  static const line = Color(0xFFE3E3E0); // separators
+  static const lineStrong = Color(0xFFC6C6C2); // borders on interactive elements
+  static const text = Color(0xFF0A0A0A);
+  static const textMuted = Color(0xFF6B6B66);
+  static const textDim = Color(0xFFA6A6A2);
+  static const accent = Color(0xFF0A0A0A); // black - use sparingly
+  static const onAccent = Color(0xFFFFFFFF);
+  static const error = Color(0xFFD93F45);
 }
 
 abstract final class SwFonts {
@@ -99,7 +99,7 @@ abstract final class SwText {
 
 ThemeData buildSpendwiseTheme() {
   const scheme = ColorScheme(
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     primary: SwColors.accent,
     onPrimary: SwColors.onAccent,
     secondary: SwColors.text,
@@ -115,7 +115,7 @@ ThemeData buildSpendwiseTheme() {
     surfaceContainerHigh: SwColors.surfaceRaised,
   );
 
-  final textTheme = ThemeData.dark().textTheme.apply(
+  final textTheme = ThemeData.light().textTheme.apply(
         fontFamily: SwFonts.sans,
         bodyColor: SwColors.text,
         displayColor: SwColors.text,
@@ -126,7 +126,7 @@ ThemeData buildSpendwiseTheme() {
 
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     colorScheme: scheme,
     scaffoldBackgroundColor: SwColors.bg,
     canvasColor: SwColors.bg,
@@ -141,7 +141,7 @@ ThemeData buildSpendwiseTheme() {
     iconTheme: const IconThemeData(color: SwColors.textMuted, size: 16),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: SwColors.accent,
-      selectionColor: Color(0x334D8DFF),
+      selectionColor: Color(0x260A0A0A),
       selectionHandleColor: SwColors.accent,
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -189,7 +189,7 @@ ThemeData buildSpendwiseTheme() {
         }),
       ),
     ),
-    // Secondary: 1px border, transparent fill; hover inverts to off-white on black.
+    // Secondary: 1px border, transparent fill; hover inverts to white on black.
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: ButtonStyle(
         animationDuration: noAnimation,

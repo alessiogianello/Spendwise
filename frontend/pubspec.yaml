@@ -49,6 +49,28 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# App icon on every platform, generated from assets/icon/*.svg (rasterized to
+# PNG with rsvg-convert). Regenerate with: dart run flutter_launcher_icons
+# The PWA maskable icons are rendered by hand from icon_foreground.svg.
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  ios: true
+  remove_alpha_ios: true
+  macos:
+    generate: true
+  web:
+    generate: true
+    background_color: "#FFFFFF"
+    theme_color: "#0A0A0A"
+  windows:
+    generate: true
+  linux:
+    generate: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

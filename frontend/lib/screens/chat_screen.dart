@@ -5,6 +5,7 @@ import '../state/chat_provider.dart';
 import '../theme/spendwise_theme.dart';
 import '../widgets/chat_turn_view.dart';
 import '../widgets/grid_background.dart';
+import '../widgets/spendwise_mark.dart';
 
 const _suggestedQueries = [
   'Posso permettermi una cena da 80€ questo weekend?',
@@ -23,30 +24,69 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _inputFocus = FocusNode();
+  late final ChatProvider _chat;
+
+  // The log follows the stream while the user is at the bottom. Scrolling up
+  // to reread releases it; scrolling back down (or sending) re-engages it.
+  bool _followOutput = true;
+  bool _scrollScheduled = false;
+  bool _autoScrolling = false;
+
+  /// Anything closer than this to the end counts as "at the bottom".
+  static const _followThreshold = 24.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _chat = context.read<ChatProvider>();
+    _chat.addListener(_onChatChanged);
+  }
 
   @override
   void dispose() {
+    _chat.removeListener(_onChatChanged);
     _controller.dispose();
     _scrollController.dispose();
     _inputFocus.dispose();
     super.dispose();
   }
 
+  void _onChatChanged() {
+    if (_followOutput) _scrollToBottom();
+  }
+
+  /// Snap, don't glide. Coalesces the many deltas that land in one frame.
+  void _scrollToBottom() {
+    if (_scrollScheduled) return;
+    _scrollScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollScheduled = false;
+      if (!mounted || !_scrollController.hasClients) return;
+      _autoScrolling = true;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _autoScrolling = false;
+    });
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    // Our own jumps dispatch updates too; only user scrolls decide following.
+    if (_autoScrolling || notification is! ScrollUpdateNotification) return false;
+    final m = notification.metrics;
+    _followOutput = m.pixels >= m.maxScrollExtent - _followThreshold;
+    return false;
+  }
+
   void _send() {
-    final chat = context.read<ChatProvider>();
     final text = _controller.text;
     // Submitting drops focus; take it back so the user can keep typing.
     _inputFocus.requestFocus();
     // While a turn is running the field stays editable, so Enter must not
     // discard what the user has typed.
-    if (chat.isSending || text.trim().isEmpty) return;
-    chat.sendMessage(text);
+    if (_chat.isSending || text.trim().isEmpty) return;
+    _chat.sendMessage(text);
     _controller.clear();
-    // Snap, don't glide.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-    });
+    _followOutput = true;
+    _scrollToBottom();
   }
 
   void _useSuggestion(String text) {
@@ -73,13 +113,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       if (chat.turns.isEmpty) {
                         return _EmptyState(onSuggestion: _useSuggestion);
                       }
-                      return SelectionArea(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: SwSpace.xl),
-                          itemCount: chat.turns.length,
-                          itemBuilder: (context, index) => _Centered(
-                            child: ChatTurnView(index: index + 1, turn: chat.turns[index]),
+                      return NotificationListener<ScrollNotification>(
+                        onNotification: _onScroll,
+                        child: SelectionArea(
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: SwSpace.xl),
+                            itemCount: chat.turns.length,
+                            itemBuilder: (context, index) => _Centered(
+                              child: ChatTurnView(index: index + 1, turn: chat.turns[index]),
+                            ),
                           ),
                         ),
                       );
@@ -185,7 +228,7 @@ class _EmptyState extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _Crosshair(),
+              const Align(alignment: Alignment.centerLeft, child: SpendwiseMark()),
               const SizedBox(height: SwSpace.xl),
               const Text('AGENT READY', style: SwText.display),
               const SizedBox(height: SwSpace.md),
@@ -207,43 +250,6 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Small wireframe mark: a square frame with a centred crosshair.
-class _Crosshair extends StatelessWidget {
-  const _Crosshair();
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CustomPaint(painter: _CrosshairPainter()),
-      ),
-    );
-  }
-}
-
-class _CrosshairPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final frame = Paint()
-      ..color = SwColors.lineStrong
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final cross = Paint()
-      ..color = SwColors.accent
-      ..strokeWidth = 1;
-    canvas.drawRect(Offset.zero & size, frame);
-    final c = size.center(Offset.zero);
-    canvas.drawLine(Offset(c.dx - 6, c.dy), Offset(c.dx + 6, c.dy), cross);
-    canvas.drawLine(Offset(c.dx, c.dy - 6), Offset(c.dx, c.dy + 6), cross);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Full-width secondary button: query text on the left, arrow on the right.

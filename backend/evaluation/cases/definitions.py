@@ -1,5 +1,5 @@
-"""8-10 eval cases covering: read/multi-step reasoning, write actions, personalization
-memory, and an edge case. Each check asserts against ground truth - either the DB
+"""Eval cases covering: read/multi-step reasoning, write actions, personalization
+memory, and edge cases (unknown category, off-topic request). Each check asserts against ground truth - either the DB
 (for actions) or the deterministic tool output (for reads) - never against free text
 alone, so a pass/fail is never dependent on the LLM's exact wording."""
 
@@ -169,6 +169,34 @@ def _check_edge_case_unknown_category(o: ConversationOutcome) -> tuple[bool, str
     return True, "nessuna categoria/transazione spuria creata per 'Vacanze'"
 
 
+WRITE_TOOLS = frozenset({
+    "add_expense",
+    "create_or_update_budget",
+    "set_savings_goal",
+    "move_funds_between_categories",
+    "update_user_preference",
+})
+_OFF_TOPIC_MARKERS = ("marrakech", "fès", "fes ", "chefchaouen", "essaouira", "merzouga")
+
+
+def _check_edge_case_off_topic(o: ConversationOutcome) -> tuple[bool, str]:
+    """A travel question must be declined and redirected, not answered: nothing
+    written, no itinerary content, and a short reply (a real answer runs to
+    hundreds of words; a redirect fits in a couple of sentences)."""
+    if category_count(o.db) != 6 or count_transactions(o.db) != 11:
+        return False, "lo stato del DB è cambiato per una richiesta fuori ambito"
+    writes = [tc.name for tc in o.all_tool_calls if tc.name in WRITE_TOOLS]
+    if writes:
+        return False, f"chiamati tool di scrittura per una richiesta fuori ambito: {writes}"
+    text = o.last.final_text.lower()
+    found = [m.strip() for m in _OFF_TOPIC_MARKERS if m in text]
+    if found:
+        return False, f"la risposta contiene un itinerario invece di rifiutare: {found}"
+    if len(text) > 700:
+        return False, f"risposta troppo lunga per un rifiuto ({len(text)} caratteri)"
+    return True, f"richiesta rifiutata e reindirizzata in {len(text)} caratteri, nessuna scrittura"
+
+
 CASES: list[EvalCase] = [
     EvalCase(
         id="read_monthly_spending_ristoranti",
@@ -243,6 +271,13 @@ CASES: list[EvalCase] = [
         description="Chiede di registrare una spesa in una categoria inesistente",
         user_messages=["Aggiungi una spesa di 15€ per Vacanze"],
         check=_check_edge_case_unknown_category,
+        category="edge_case",
+    ),
+    EvalCase(
+        id="edge_case_off_topic",
+        description="Domanda fuori ambito (turismo): deve rifiutare e riportare sul piano finanziario",
+        user_messages=["Cosa c'è da vedere in Marocco?"],
+        check=_check_edge_case_off_topic,
         category="edge_case",
     ),
 ]
