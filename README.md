@@ -54,7 +54,7 @@ Flutter client  ──POST /chat/stream──▶  FastAPI
 
 **Manual agentic loop over the SDK's tool runner.** The loop is written out explicitly so each stage can be mapped to a custom SSE event. A batteries-included runner would drive the conversation but hide the seams where "I'm checking the restaurant budget…" and the tool result need to be pushed to the client mid-turn.
 
-**One canonical message format, pluggable providers.** The orchestrator speaks only Anthropic-shaped content blocks (`text` / `thinking` / `tool_use` / `tool_result`); a provider's sole job is to stream one model call and hand back blocks in that shape. `AnthropicProvider` passes them through; `OpenRouterProvider` translates to and from the OpenAI chat-completions format (tool calls, `role: tool` results, `reasoning` echo-back) and takes the billed cost straight from OpenRouter's `usage.cost`. Switching vendor is two lines of `.env`, and the stored history, the replay endpoint and the UI never change.
+**One canonical message format, pluggable providers.** The orchestrator speaks only Anthropic-shaped content blocks (`text` / `thinking` / `tool_use` / `tool_result`); a provider's sole job is to stream one model call and hand back blocks in that shape. `OpenRouterProvider` translates to and from the OpenAI chat-completions format (tool calls, `role: tool` results, `reasoning` echo-back) and takes the billed cost straight from OpenRouter's `usage.cost`. Switching model or vendor is one line of `.env`, and the stored history, the replay endpoint and the UI never change.
 
 **SSE, not WebSockets.** The flow is one-directional (client asks, server streams back). SSE is simpler to implement, trivial to test with `curl`, and needs no connection lifecycle management.
 
@@ -125,23 +125,22 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env        # then add your ANTHROPIC_API_KEY
+cp .env.example .env        # then add your OPENROUTER_API_KEY
 python seed_data.py         # deterministic demo data
 uvicorn app.main:app --reload
 ```
 
 API at `http://127.0.0.1:8000` (interactive docs at `/docs`).
 
-**Using OpenRouter models instead of Claude directly.** In `.env`:
+**Choosing the model.** Every model goes through OpenRouter, so `.env` needs only:
 
 ```bash
-LLM_PROVIDER=openrouter
-LLM_MODEL=openai/gpt-5.4-mini        # any vendor/model id from openrouter.ai/models
+LLM_MODEL=anthropic/claude-opus-5    # any vendor/model id from openrouter.ai/models
 OPENROUTER_API_KEY=sk-or-...
 # OPENROUTER_REASONING_EFFORT=medium # optional: surfaces reasoning as trace steps on models that support it
 ```
 
-Cost shown in the UI and eval reports is then the amount OpenRouter actually billed, not an estimate. To keep Claude's native features (adaptive thinking, prompt caching) but pay through OpenRouter, leave `LLM_PROVIDER=anthropic` and set `ANTHROPIC_BASE_URL=https://openrouter.ai/api` with your OpenRouter key in `ANTHROPIC_API_KEY`.
+Cost shown in the UI and eval reports is the amount OpenRouter actually billed, not an estimate.
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/chat/stream \
@@ -193,7 +192,7 @@ The client points at `http://127.0.0.1:8000` by default (`lib/services/agent_api
 backend/
   app/
     agent/          orchestrator (tool-use loop + SSE), tools, prompts, memory, pricing
-      providers/    LLM provider contract + Anthropic and OpenRouter implementations
+      providers/    LLM provider contract + OpenRouter implementation
     api/            chat (SSE), budgets, transactions, goals
     services/       budget and savings-goal business logic
     models.py       SQLAlchemy schema

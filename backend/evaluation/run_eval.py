@@ -6,8 +6,8 @@ text alone), and reports accuracy, cost per request, and latency.
 
 Usage:
     python -m evaluation.run_eval
-    python -m evaluation.run_eval --model claude-sonnet-5
-    python -m evaluation.run_eval --provider openrouter --model openai/gpt-5.4-mini
+    python -m evaluation.run_eval --model anthropic/claude-sonnet-5
+    python -m evaluation.run_eval --model openai/gpt-5.4-mini
     python -m evaluation.run_eval --case reasoning_afford_dinner
 """
 
@@ -24,16 +24,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the Spendwise agent offline eval suite")
-    parser.add_argument("--model", help="Override LLM_MODEL for this run (e.g. claude-sonnet-5, openai/gpt-5.4-mini)")
-    parser.add_argument("--provider", choices=["anthropic", "openrouter"], help="Override LLM_PROVIDER for this run")
+    parser.add_argument("--model", help="Override LLM_MODEL for this run (e.g. anthropic/claude-sonnet-5, openai/gpt-5.4-mini)")
     parser.add_argument("--case", help="Only run cases whose id contains this substring")
     parser.add_argument("--output", help="Path for the JSON report", default=None)
     args = parser.parse_args()
 
     if args.model:
         os.environ["LLM_MODEL"] = args.model
-    if args.provider:
-        os.environ["LLM_PROVIDER"] = args.provider
 
     # Imported after the env override above, so app.config.Settings picks it up.
     from app.agent.orchestrator import get_or_create_session, stream_agent_turn
@@ -44,10 +41,9 @@ def main() -> int:
     from evaluation.types import CaseResult, ConversationOutcome, ToolCallRecord, TurnOutcome
 
     settings = get_settings()
-    key_name = "OPENROUTER_API_KEY" if settings.llm_provider == "openrouter" else "ANTHROPIC_API_KEY"
-    if not getattr(settings, key_name.lower()) and not os.environ.get(key_name):
+    if not settings.openrouter_api_key:
         print(
-            f"{key_name} is not set. Set it in backend/.env or the environment "
+            "OPENROUTER_API_KEY is not set. Set it in backend/.env or the environment "
             "before running the eval suite (it makes real API calls).",
             file=sys.stderr,
         )
@@ -115,11 +111,11 @@ def main() -> int:
 
     results = [asyncio.run(run_case(case)) for case in cases]
     metrics = compute_metrics(results)
-    print_report(results, metrics, f"{settings.llm_provider}:{settings.model}")
+    print_report(results, metrics, f"openrouter:{settings.model}")
 
     report = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "provider": settings.llm_provider,
+        "provider": "openrouter",
         "model": settings.model,
         "metrics": {
             "accuracy": metrics.accuracy,

@@ -60,8 +60,9 @@ def test_history_translates_tool_loop():
     assert out[4] == {"role": "assistant", "content": "Ti restano 60 €."}
 
 
-def test_anthropic_thinking_history_falls_back_to_plain_reasoning():
-    # History written by the Anthropic provider has a signature, not reasoning_details.
+def test_signed_thinking_history_falls_back_to_plain_reasoning():
+    # Sessions stored before the OpenRouter-only switch carry Anthropic-native
+    # thinking blocks (a signature, no reasoning_details).
     messages = [
         {"role": "assistant", "content": [{"type": "thinking", "thinking": "ragiono", "signature": "abc"}, {"type": "text", "text": "ok"}]}
     ]
