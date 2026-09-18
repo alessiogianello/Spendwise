@@ -8,14 +8,20 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 # Pinned to the version the project is developed with (see frontend/README.md).
 ARG FLUTTER_VERSION=3.44.8
-RUN git clone --depth 1 --branch ${FLUTTER_VERSION} https://github.com/flutter/flutter.git /flutter
+# Flutter runs as an unprivileged user: as root, extracting its artifact
+# tarballs tries to restore file ownership, which sandboxed builders refuse.
+RUN useradd --create-home builder \
+    && git clone --depth 1 --branch ${FLUTTER_VERSION} https://github.com/flutter/flutter.git /flutter \
+    && chown -R builder:builder /flutter \
+    && mkdir /src && chown builder:builder /src
+USER builder
 ENV PATH="/flutter/bin:${PATH}"
 RUN flutter config --no-analytics --enable-web && flutter precache --web
 
 WORKDIR /src
-COPY frontend/pubspec.yaml frontend/pubspec.lock ./
+COPY --chown=builder:builder frontend/pubspec.yaml frontend/pubspec.lock ./
 RUN flutter pub get
-COPY frontend/ ./
+COPY --chown=builder:builder frontend/ ./
 RUN flutter build web --release
 
 # --- stage 2: backend + static files ----------------------------------------
