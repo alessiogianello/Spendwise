@@ -1,0 +1,19 @@
+# Render Blueprint: one Docker web service serving API + Flutter web client.
+# In the dashboard: New → Blueprint → pick this repo, then fill in the two
+# secret env vars when prompted.
+services:
+  - type: web
+    name: spendwise
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false # set in the dashboard, never committed
+      - key: DEMO_PASSWORD
+        sync: false # passphrase the client asks for once
+      - key: LLM_MODEL
+        value: anthropic/claude-opus-5
+      - key: DATABASE_URL
+        value: sqlite:////tmp/spendwise.db # ephemeral: reseeded on every boot

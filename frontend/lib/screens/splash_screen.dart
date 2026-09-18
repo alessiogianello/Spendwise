@@ -2,14 +2,18 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../state/chat_provider.dart';
 import '../theme/spendwise_theme.dart';
 import '../widgets/spendwise_mark.dart';
+import 'access_screen.dart';
 import 'chat_screen.dart';
 
 /// Animated splash: the mark breathes - scales up and down a few percent while
-/// its colour swings between grey and black - on one shared sinusoidal phase,
-/// then the app cross-fades into the chat.
+/// its colour swings between grey and black - on one shared sinusoidal phase.
+/// Meanwhile it asks the backend whether a password is needed, and after the
+/// minimum duration cross-fades into the chat or the access gate.
 class SplashScreen extends StatefulWidget {
   /// How long the splash stays on screen before handing over to the chat.
   final Duration duration;
@@ -27,13 +31,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   static const _fullColor = SwColors.text;
 
   late final AnimationController _clock;
+  late final Future<bool> _access;
   Timer? _handover;
 
   @override
   void initState() {
     super.initState();
     _clock = AnimationController(vsync: this, duration: _period)..repeat();
-    _handover = Timer(widget.duration, _openChat);
+    // Unreachable backend counts as "open": the chat surfaces the real error
+    // on the first message, which is more useful than a password prompt.
+    _access = context.read<ChatProvider>().client.checkAccess().catchError((_) => true);
+    _handover = Timer(widget.duration, _handOver);
   }
 
   @override
@@ -43,12 +51,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  void _openChat() {
+  Future<void> _handOver() async {
+    final open = await _access;
     if (!mounted) return;
+    final Widget next = open ? const ChatScreen() : const AccessScreen();
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 350),
-        pageBuilder: (_, _, _) => const ChatScreen(),
+        pageBuilder: (_, _, _) => next,
         transitionsBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
       ),
     );

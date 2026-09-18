@@ -14,6 +14,8 @@ class ChatProvider extends ChangeNotifier {
 
   ChatProvider({AgentApiClient? client}) : _client = client ?? AgentApiClient();
 
+  AgentApiClient get client => _client;
+
   Future<void> sendMessage(String message) async {
     if (message.trim().isEmpty || isSending) return;
 

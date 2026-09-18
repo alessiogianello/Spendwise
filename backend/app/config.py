@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./spendwise.db"
     demo_user_id: int = 1
 
+    # Shared passphrase for the hosted demo, sent as X-Demo-Password by the
+    # client. Unset (the local default) means the API is open.
+    demo_password: str | None = None
+    # Flutter web build to serve at "/" when the directory exists (see Dockerfile).
+    static_dir: str = "static"
+
 
 @lru_cache
 def get_settings() -> Settings:

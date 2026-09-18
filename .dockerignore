@@ -1,0 +1,14 @@
+.git
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/build
+**/.dart_tool
+backend/*.db
+backend/.env
+backend/evaluation/reports
+frontend/android
+frontend/ios
+frontend/macos
+frontend/linux
+frontend/windows

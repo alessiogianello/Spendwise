@@ -156,7 +156,19 @@ flutter pub get
 flutter run          # -d chrome / -d macos / a simulator
 ```
 
-The client points at `http://127.0.0.1:8000` by default (`lib/services/agent_api_client.dart`). On an Android emulator, change the base URL to `http://10.0.2.2:8000`.
+The client points at `http://127.0.0.1:8000` by default; a web build talks to its own origin. Override with `--dart-define=API_BASE_URL=http://10.0.2.2:8000` (Android emulator) or any other host.
+
+### Deploying the demo
+
+One Docker image builds the Flutter web client and serves it from the FastAPI backend, so the demo is a single URL. `render.yaml` is a Render Blueprint for it:
+
+1. Push the repo to GitHub.
+2. Render dashboard → **New → Blueprint** → pick the repo. It reads `render.yaml` and asks for the two secrets: `OPENROUTER_API_KEY` and `DEMO_PASSWORD`.
+3. Deploy. The first build takes ~10 minutes (it clones Flutter); later ones are cached.
+
+`DEMO_PASSWORD` is a shared passphrase the client asks for once and sends as `X-Demo-Password` on every request — there are no accounts, it only keeps strangers with the link from spending your OpenRouter credits. Leave it unset locally and the gate never appears. The SQLite database lives on the instance's ephemeral disk and is re-seeded on every boot, which is what you want for a demo. On the free plan the service sleeps after 15 minutes idle; the first load afterwards takes ~30-50 s.
+
+Same image anywhere else: `docker build -t spendwise . && docker run -p 8000:8000 -e OPENROUTER_API_KEY=... -e DEMO_PASSWORD=... spendwise`.
 
 ---
 
@@ -194,6 +206,7 @@ backend/
     agent/          orchestrator (tool-use loop + SSE), tools, prompts, memory
       providers/    LLM provider contract + OpenRouter implementation
     api/            chat (SSE), budgets, transactions, goals
+    auth.py         shared-passphrase gate for the hosted demo
     services/       budget and savings-goal business logic
     models.py       SQLAlchemy schema
   evaluation/       eval cases, fixtures, metrics, runner, JSON reports
