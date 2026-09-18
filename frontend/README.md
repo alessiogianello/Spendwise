@@ -11,4 +11,7 @@ flutter pub get
 flutter run   # -d chrome / -d macos / a simulator
 ```
 
-The backend base URL is set in `lib/services/agent_api_client.dart`.
+The backend base URL defaults to `http://127.0.0.1:8000` on desktop and
+simulators, and to the page's own origin on web. Override it with
+`--dart-define=API_BASE_URL=http://10.0.2.2:8000` (Android emulator) or any
+other host - see `lib/services/agent_api_client.dart`.

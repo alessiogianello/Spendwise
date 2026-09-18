@@ -95,11 +95,11 @@ Run against real API calls, resetting to a deterministic fixture before each cas
 cd backend
 python -m evaluation.run_eval                      # full suite
 python -m evaluation.run_eval --case reasoning     # one case
-python -m evaluation.run_eval --model claude-sonnet-5   # compare cost/quality
-python -m evaluation.run_eval --provider openrouter --model openai/gpt-5.4-mini
+python -m evaluation.run_eval --model anthropic/claude-sonnet-5   # compare cost/quality
+python -m evaluation.run_eval --model deepseek/deepseek-v3.2
 ```
 
-Latest run (`claude-opus-5`):
+Latest full run (`anthropic/claude-opus-5`, on the 10 cases that existed before the off-topic edge case was added):
 
 | Metric | Result |
 |---|---|
@@ -214,10 +214,14 @@ backend/
   seed_data.py      deterministic demo/fixture data
 frontend/
   lib/
-    services/       SSE client
+    services/       SSE client (base URL + demo password header)
     state/          streaming chat state
-    widgets/        reasoning trail + final answer (visually distinct)
-    screens/        chat screen
+    widgets/        reasoning trail, final answer, shared mark
+    screens/        splash (animated mark) → access gate → chat
+    theme/          design tokens: white base, black details
+  assets/icon/      launcher icon sources (SVG → PNG via flutter_launcher_icons)
+Dockerfile          single image: Flutter web build served by the backend
+render.yaml         Render Blueprint for the hosted demo
 ```
 
 ## Database schema
@@ -227,14 +231,14 @@ frontend/
 ## Testing
 
 ```bash
-cd backend && pytest        # 34 tests, no API calls, fully deterministic
+cd backend && pytest        # 37 tests, no API calls, fully deterministic
 cd frontend && flutter test
 ```
 
-The pytest suite covers tool logic, endpoints, the eval harness, the OpenRouter message translation, and the full agent loop driven by a scripted provider, without touching the network; the eval suite is the separate, paid layer that exercises the model itself.
+The pytest suite covers tool logic, endpoints, the demo password gate, the eval harness, the OpenRouter message translation, and the full agent loop driven by a scripted provider, without touching the network; the eval suite is the separate, paid layer that exercises the model itself.
 
 ---
 
 ## Scope and limitations
 
-Deliberately out of scope, to keep the focus on agent design: authentication (a single seeded demo user), income tracking (savings are derived from budget headroom), and multi-currency support. SQLite and synchronous SQLAlchemy are used throughout — sufficient at this scale, and the business logic sits behind a service layer, so moving to Postgres is a configuration change rather than a rewrite.
+Deliberately out of scope, to keep the focus on agent design: authentication (a single seeded demo user; the hosted demo has only a shared passphrase, not accounts), income tracking (savings are derived from budget headroom), and multi-currency support. SQLite and synchronous SQLAlchemy are used throughout — sufficient at this scale, and the business logic sits behind a service layer, so moving to Postgres is a configuration change rather than a rewrite.
