@@ -14,6 +14,6 @@ services:
       - key: DEMO_PASSWORD
         sync: false # passphrase the client asks for once
       - key: LLM_MODEL
-        value: anthropic/claude-opus-5
+        value: deepseek/deepseek-v3.2 # any vendor/model id on openrouter.ai/models with tool calling
       - key: DATABASE_URL
         value: sqlite:////tmp/spendwise.db # ephemeral: reseeded on every boot
