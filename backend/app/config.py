@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
 
     # OpenRouter model id in vendor/model form, e.g. anthropic/claude-sonnet-5
     # or openai/gpt-5.4-mini (full list: openrouter.ai/models).
-    model: str = "anthropic/claude-opus-5"
+    model: str = Field("anthropic/claude-opus-5", validation_alias="LLM_MODEL")
 
     openrouter_api_key: str | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

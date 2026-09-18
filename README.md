@@ -99,14 +99,16 @@ python -m evaluation.run_eval --model anthropic/claude-sonnet-5   # compare cost
 python -m evaluation.run_eval --model deepseek/deepseek-v3.2
 ```
 
-Latest full run (`anthropic/claude-opus-5`, on the 10 cases that existed before the off-topic edge case was added):
+Latest full runs, same 11 cases, via OpenRouter:
 
-| Metric | Result |
-|---|---|
-| Accuracy | **10/10** — read 3/3, action 4/4, reasoning 1/1, memory 1/1, edge case 1/1 |
-| Cost | $0.219 total · **$0.0219 per request** |
-| Tokens | 1,797 average per request |
-| Latency | 9.3s average · 15.9s p95 |
+| | `deepseek/deepseek-v3.2` | `anthropic/claude-opus-5` |
+|---|---|---|
+| Accuracy | **11/11** — read 3/3, action 4/4, reasoning 1/1, memory 1/1, edge case 2/2 | **11/11** |
+| Cost | $0.0096 total · **$0.0009 per request** | $0.53 total · $0.048 per request |
+| Tokens | 6,156 average per request | 8,148 average per request |
+| Latency | 12.5s average · 15.2s p95 | 9.6s average · 12.6s p95 |
+
+DeepSeek issues one tool call per turn where Claude batches them, so it needs more round-trips (hence the latency) but reaches the same answers at roughly 1/50 of the cost — which is why the hosted demo runs on it.
 
 Every run writes a timestamped JSON report to `backend/evaluation/reports/`, and the process exits non-zero if any case fails, so it drops straight into CI.
 

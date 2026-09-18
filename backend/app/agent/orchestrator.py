@@ -13,7 +13,9 @@ from app.config import get_settings
 from app.models import ConversationMessage, ConversationSession
 
 settings = get_settings()
-MAX_TOOL_ITERATIONS = 6
+# Runaway guard, not a budget: a multi-step question legitimately takes 6-7
+# calls on models that issue one tool call per turn instead of batching them.
+MAX_TOOL_ITERATIONS = 10
 
 
 def _load_history(db: Session, session_id: int) -> list[dict]:
